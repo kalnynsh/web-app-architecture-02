@@ -1,0 +1,19 @@
+.idea
+.php_cs.cache
+phpunit.xml
+/app/config/parameters.yml
+/bin/
+/vendor/
+.DS_Store
+.vs_code
+.vscode
+.vagrant
+.bowerrc
+
+# netbeans project files
+nbproject
+
+# zend studio for eclipse project files
+.buildpath
+.project
+.settings
