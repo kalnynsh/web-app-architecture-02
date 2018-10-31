@@ -36,7 +36,12 @@ class ProductController
 
         $isInBasket = (new Order($request->getSession()))->isProductInBasket($productInfo->getId());
 
-        return $this->render('product/info.html.php', ['productInfo' => $productInfo, 'isInBasket' => $isInBasket]);
+        return $this->render(
+            'product/info.html.php',
+            [
+                'productInfo' => $productInfo,
+                'isInBasket' => $isInBasket
+        ]);
     }
 
     /**
@@ -50,7 +55,7 @@ class ProductController
     {
         $productList = (new Product())->getAll();
 
-        // Урок 3. Применить паттерн Стратегия
+        // Урок 4. Применить паттерн Стратегия
         // $request->query->get('price') // Сортировка по цене
         // $request->query->get('name') // Сортировка по имени
 
