@@ -4,11 +4,13 @@ declare(strict_types = 1);
 
 namespace Controller;
 
-use Framework\Render;
-use Service\Order\Order;
-use Service\Product\Product;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
+use Service\Sorting\PriceSorter;
+use Service\Sorting\NameSorter;
+use Service\Product\Product as ProductService;
+use Service\Order\Order as OrderService;
+use Framework\Render;
 
 class ProductController
 {
@@ -23,9 +25,9 @@ class ProductController
      */
     public function infoAction(Request $request, $id): Response
     {
-        $product = new Product();
+        $product = new ProductService();
         if ($request->isMethod(Request::METHOD_POST)) {
-            (new Order($request->getSession()))->addProduct((int)$request->request->get('product'));
+            (new OrderService($request->getSession()))->addProduct((int)$request->request->get('product'));
         }
 
         $productInfo = $product->getOne((int)$id);
@@ -34,7 +36,7 @@ class ProductController
             return $this->render('error404.html.php');
         }
 
-        $isInBasket = (new Order($request->getSession()))->isProductInBasket($productInfo->getId());
+        $isInBasket = (new OrderService($request->getSession()))->isProductInBasket($productInfo->getId());
 
         return $this->render(
             'product/info.html.php',
@@ -53,12 +55,18 @@ class ProductController
      */
     public function listAction(Request $request): Response
     {
-        $productList = (new Product())->getAll();
-
         // Урок 4. Применить паттерн Стратегия
-        // $request->query->get('price') // Сортировка по цене
-        // $request->query->get('name') // Сортировка по имени
+        // $request->query->get('sort') // 'price' - cортировка по цене
+        // $request->query->get('name') // 'name' - cортировка по имени
 
-        return $this->render('product/list.html.php', ['productList' => $productList]);
+        $productService = new ProductService();
+        $productsList = $productService->getAll();
+
+        $sortingParam = $request->query->get('sort') ?? 'name';
+        $sorter = ($sortingParam === 'price') ? (new PriceSorter()) : (new NameSorter());
+
+        $productsSorted = $productService->sort($sorter, $productsList);
+
+        return $this->render('product/list.html.php', ['productList' => $productsSorted]);
     }
 }

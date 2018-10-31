@@ -22,7 +22,7 @@
         "friendsofphp/php-cs-fixer": "^2.13"
     },
     "scripts": {
-        "on": "php -S 0.0.0.0:8080 -t web",
+        "on": "php -S 127.1.0.0:8080 -t web",
         "test": "bin/phpunit --colors=always",
         "ipr": "@composer install --ignore-platform-reqs",
         "check": "bin/php-cs-fixer -vvv fix --dry-run",
