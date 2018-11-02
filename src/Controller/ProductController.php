@@ -57,7 +57,7 @@ class ProductController
     {
         // Урок 4. Применить паттерн Стратегия
         // $request->query->get('sort') // 'price' - cортировка по цене
-        // $request->query->get('name') // 'name' - cортировка по имени
+        // $request->query->get('sort') // 'name' - cортировка по имени
 
         $productService = new ProductService();
         $productsList = $productService->getAll();
