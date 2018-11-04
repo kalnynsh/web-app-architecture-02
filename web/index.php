@@ -10,7 +10,6 @@ use Framework\registers\RoutesRegister;
 use Framework\registers\ConfigsRegister;
 use Framework\commands\RoutesRegisterCommand;
 use Framework\commands\ConfigsRegisterCommand;
-use Framework\RegistersInvoker;
 
 require_once ROOT . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
 
@@ -18,17 +17,17 @@ $request = Request::createFromGlobals();
 $containerBuilder = new ContainerBuilder();
 Framework\Registry::addContainer($containerBuilder);
 
-$configsRegister = new ConfigsRegister(
-    $containerBuilder
-);
+$configsRegister = new ConfigsRegister($containerBuilder);
 $routesRegister = new RoutesRegister($containerBuilder);
 
 $configsCommand = new ConfigsRegisterCommand($configsRegister);
 $routesCommand = new RoutesRegisterCommand($routesRegister);
 
-$registersInvoker = new RegistersInvoker();
-$registersInvoker->registerIt($configsCommand);
-$registersInvoker->registerIt($routesCommand);
+$kernel = new Kernel(
+    $containerBuilder,
+    $configsCommand,
+    $routesCommand
+);
 
-$response = (new Kernel($containerBuilder))->handle($request);
+$response = $kernel->handle($request);
 $response->send();

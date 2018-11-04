@@ -1,29 +1,56 @@
 <?php
 
-declare(strict_types = 1);
+declare (strict_types = 1);
 
-use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Framework\commands\ConfigsRegisterCommand;
+use Framework\commands\ProcessesCommand;
+use Framework\commands\RoutesRegisterCommand;
+use Framework\processors\RequestProcessor;
+use Framework\registers\ConfigsRegister;
+use Framework\registers\RoutesRegister;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\HttpKernel\Controller\ControllerResolver;
-use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Session\Session;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Routing\Matcher\UrlMatcher;
-use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
 
+/**
+ * Kernel class
+ *
+ * @property RouteCollection $routeCollection
+ * @property ContainerBuilder $containerBuilder
+ * @property ConfigsRegisterCommand $configsCommand
+ * @property RoutesRegisterCommand $routesCommand
+ * @property ProcessesCommand $processesCommand
+ */
 class Kernel
 {
-    /**
-     * @var RouteCollection
-     */
-    protected $routeCollection;
+    protected $configsCommand;
+    protected $routesCommand;
 
-    public function __construct(ContainerBuilder $containerBuilder)
+    public function __construct(
+        ContainerBuilder $containerBuilder,
+        ConfigsRegisterCommand $configsCommand,
+        RoutesRegisterCommand $routesCommand
+    ) {
+        $this->containerBuilder = $containerBuilder;
+        $this->configsCommand = $configsCommand;
+        $this->routesCommand = $routesCommand;
+    }
+
+    /**
+     * @return void
+     */
+    protected function registerConfigs(): void
     {
-        $this->routeCollection = $containerBuilder->get('route_collection');
+        $this->configsCommand->execute();
+    }
+
+    /**
+     * @return void
+     */
+    protected function registerRoutes(): void
+    {
+        $this->routesCommand->execute();
     }
 
     /**
@@ -32,21 +59,22 @@ class Kernel
      */
     public function handle(Request $request): Response
     {
-        $matcher = new UrlMatcher($this->routeCollection, new RequestContext());
-        $matcher->getContext()->fromRequest($request);
+        $this->registerConfigs();
+        $this->registerRoutes();
 
-        try {
-            $request->attributes->add($matcher->match($request->getPathInfo()));
-            $request->setSession(new Session());
+        return $this->process($request);
+    }
 
-            $controller = (new ControllerResolver())->getController($request);
-            $arguments = (new ArgumentResolver())->getArguments($request, $controller);
+    /**
+     * @param Request $request
+     * @return Response
+     */
+    public function process(Request $request): Response
+    {
+        $routeCollection = $this->containerBuilder->get('route_collection');
+        $requestProcessor = new RequestProcessor($routeCollection);
+        $processesCommand = new ProcessesCommand($requestProcessor, $request);
 
-            return call_user_func_array($controller, $arguments);
-        } catch (ResourceNotFoundException $e) {
-            return new Response('Page not found. 404', Response::HTTP_NOT_FOUND);
-        } catch (\Throwable $e) {
-            return new Response('Server error occurred. 500', Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        return $processesCommand->execute();
     }
 }
